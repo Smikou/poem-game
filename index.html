@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>诗韵·元日</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #B03030;  /* 故宫朱墙红 */
+            --secondary-color: #F5F0EB; /* 素绢白 */
+            --accent-color: #7A6248;    /* 茶汤褐 */
+            --text-color: #2D2D2D;      /* 徽墨黑 */
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 50% 50%, 
+                    rgba(0,0,0,0.02) 15%, 
+                    transparent 30%),
+                repeating-linear-gradient(
+                    45deg,
+                    transparent 0px,
+                    transparent 2px,
+                    rgba(0,0,0,0.03) 2px,
+                    rgba(0,0,0,0.03) 4px
+                );
+            color: var(--text-color);
+            font-family: '宋体', serif;
+            display: grid;
+            grid-template-columns: 1fr;
+            justify-items: center;
+            align-items: center;
+        }
+
+        .negative-space {
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M20 150 Q100 20 180 150" stroke="%23B03030" fill="none" stroke-opacity="0.05"/></svg>') right/contain no-repeat;
+            opacity: 0.1;
+        }
+
+        .game-container {
+            padding: 2rem;
+            background: linear-gradient(145deg, rgba(176,48,48,0.05) 0%, rgba(245,240,235,0.8) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 
+                0 12px 24px -12px rgba(0,0,0,0.1),
+                0 24px 48px -24px rgba(176,48,48,0.15),
+                inset 0 -2px 4px rgba(255,255,255,0.3);
+            margin: 2rem;
+            position: relative;
+            width: 80%; /* 使游戏容器的宽度为页面宽度的80% */
+            max-width: 900px; /* 设置最大宽度 */
+        }
+
+        #poem-title {
+            font-size: 3rem;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 8px rgba(176,48,48,0.2);
+            margin: 1rem 0 2rem;
+            position: relative;
+        }
+
+        #poem-title::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+        }
+
+        .verse {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .character-box {
+            width: 4rem;
+            height: 4rem;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 12px;
+            margin: 2rem 0;
+            min-height: 5rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .word-pool span {
+            padding: 0.8rem 1.2rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.8rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .word-pool span::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.3s;
+        }
+
+        .word-pool span:hover::before {
+            left: 100%;
+        }
+
+        #timer {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(255,255,255,0.9);
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            border: 1px solid var(--accent-color);
+        }
+
+        /* 教程弹窗美化 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background: rgba(245,240,235,0.96);
+            width: 60%;
+            max-width: 500px;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 16px 32px rgba(0,0,0,0.1);
+            border: 1px solid var(--accent-color);
+            animation: modalEntry 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalEntry {
+            0% { transform: translateY(20px) scale(0.98); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            color: var(--accent-color);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close:hover {
+            transform: rotate(90deg);
+        }
+
+        .modal-content h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .modal-content li {
+            padding: 0.8rem;
+            margin: 0.8rem 0;
+            background: rgba(176,48,48,0.05);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .btn-primary {
+            position: relative;
+            display: block;
+            margin: 2rem auto 0;
+            padding: 1rem 2rem;
+            background: none;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 30px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(176,48,48,0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-primary:hover {
+            background: rgba(176,48,48,0.05);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="negative-space"></div>
+    
+    <div class="game-container">
+        <h1 id="poem-title">元日</h1>
+        <div id="timer">02:00</div>
+        <div id="author-select"></div>
+        <div id="verse-container"></div>
+        <div class="word-pool"></div>
+        <button id="undo-btn" class="btn-primary" onclick="undo()">撤销</button>
+        <div id="controls">
+            <label>
+                <input type="checkbox" id="music-toggle" checked> 背景音乐
+            </label>
+            <label>
+                <input type="checkbox" id="sound-toggle" checked> 音效
+            </label>
+        </div>
+    </div>
+
+    <!-- 教程弹窗 -->
+    <div id="tutorial-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeTutorial()">&times;</span>
+            <h2>诗韵·游戏指南</h2>
+            <ul>
+                <li>❶ 先选择正确作者</li>
+                <li>❷ 点击文字组成诗句</li>
+                <li>❸ 限时两分钟完成</li>
+            </ul>
+            <button class="btn-primary" onclick="startGame()">开始吟诗</button>
+        </div>
+    </div>
+
+<script>
+const poem = {
+    title: "元日",
+    author: "王安石",
+    verses: [
+        "爆竹声中一岁除",
+        "春风送暖入屠苏",
+        "千门万户曈曈日",
+        "总把新桃换旧符"
+    ]
+};
+
+let selectedWords = [];
+let timeLeft = 120;
+let timerId;
+let musicEnabled = true;
+let soundEnabled = true;
+
+function startGame() {
+    document.getElementById('tutorial-modal').style.display = 'none';
+    setupWordPool(); // 初始化文字池
+    startTimer(); // 开始计时
+    if (musicEnabled) {
+        playBackgroundMusic(); // 播放背景音乐
+    }
+}
+
+function initGame() {
+    setupAuthorSelect();
+    setupVerses();
+    showTutorial();
+    document.getElementById('music-toggle').addEventListener('change', toggleMusic);
+    document.getElementById('sound-toggle').addEventListener('change', toggleSound);
+}
+
+function showTutorial() {
+    document.getElementById('tutorial-modal').style.display = 'block';
+}
+
+function closeTutorial() {
+    document.getElementById('tutorial-modal').style.display = 'none';
+}
+
+function setupAuthorSelect() {
+    const authors = ["李白", "杜甫", "王安石", "苏轼"];
+    document.getElementById('author-select').innerHTML = authors.map(a => `
+        <button class="btn-primary" onclick="checkAuthor('${a}')">${a}</button>
+    `).join('');
+}
+
+function checkAuthor(author) {
+    if (author === poem.author) {
+        document.getElementById('author-select').innerHTML = `
+            <div class="seal">作者</div>
+            <h3 style="color:var(--primary-color); margin:0.5rem 0;">${author}</h3>
+        `;
+    } else {
+        alert("再仔细想想哦～");
+    }
+}
+
+function setupVerses() {
+    document.getElementById('verse-container').innerHTML = poem.verses.map(verse => `
+        <div class="verse">
+            ${verse.split('').map(() => `
+                <div class="character-box"></div>
+            `).join('')}
+        </div>
+    `).join('');
+}
+
+function setupWordPool() {
+    const words = [...poem.verses.join('')]
+        .sort(() => Math.random() - 0.5)
+        .map(word => `<span onclick="selectWord(this)">${word}</span>`)
+        .join('');
+    document.querySelector('.word-pool').innerHTML = words;
+}
+
+let currentVerseIndex = 0;
+
+function selectWord(element) {
+    if (timeLeft <= 0) return;
+    
+    const selectedWord = element.textContent;
+    const verseBoxes = document.querySelectorAll('.verse')[currentVerseIndex]
+                        .querySelectorAll('.character-box:empty');
+    
+    if (verseBoxes.length > 0) {
+        if (soundEnabled) {
+            playClickSound(); // 播放点击音效
+        }
+        
+        // 标记选中状态
+        element.style.opacity = '0.5';
+        element.style.pointerEvents = 'none';
+        
+        // 填充诗句位置
+        verseBoxes[0].textContent = selectedWord;
+        verseBoxes[0].dataset.original = selectedWord;
+        verseBoxes[0].classList.add('filled');
+        
+        // 记录操作历史
+        selectedWords.push({
+            word: selectedWord,
+            element: element,
+            position: verseBoxes[0]
+        });
+        
+        checkVerseCompletion();
+    }
+}
+
+function checkVerseCompletion() {
+    const currentVerse = document.querySelectorAll('.verse')[currentVerseIndex];
+    const filledBoxes = currentVerse.querySelectorAll('.filled');
+    
+    // 验证诗句正确性
+    if (filledBoxes.length === poem.verses[currentVerseIndex].length) {
+        const userVerse = Array.from(filledBoxes).map(box => box.textContent).join('');
+        if (userVerse === poem.verses[currentVerseIndex]) {
+            handleCorrectVerse();
+        } else {
+            handleWrongVerse();
+        }
+    }
+}
+
+function handleCorrectVerse() {
+    // 正确动画效果
+    const currentVerse = document.querySelectorAll('.verse')[currentVerseIndex];
+    currentVerse.style.transform = 'translateY(-4px)';
+    currentVerse.style.boxShadow = '0 8px 16px rgba(176,48,48,0.15)';
+    
+    // 添加正确标记
+    const seal = document.createElement('div');
+    seal.className = 'seal';
+    seal.textContent = '✓';
+    currentVerse.appendChild(seal);
+    
+    // 推进到下一句
+    currentVerseIndex++;
+    if (currentVerseIndex < poem.verses.length) {
+        setupWordPool(); // 重新初始化文字池
+    } else {
+        handleGameSuccess();
+    }
+}
+
+function handleWrongVerse() {
+    // 错误提示动画
+    const verse = document.querySelectorAll('.verse')[currentVerseIndex];
+    verse.animate([
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-10px)' },
+        { transform: 'translateX(10px)' },
+        { transform: 'translateX(0)' }
+    ], { duration: 400 });
+    
+    if (soundEnabled) {
+        playFailureSound(); // 播放失败音效
+    }
+}
+
+function undo() {
+    if (selectedWords.length > 0) {
+        const lastAction = selectedWords.pop();
+        
+        // 恢复文字到词池
+        lastAction.element.style.opacity = '1';
+        lastAction.element.style.pointerEvents = 'auto';
+        
+        // 清空诗句位置
+        lastAction.position.textContent = '';
+        lastAction.position.classList.remove('filled');
+        
+        // 如果撤销的是正确标记
+        const seal = document.querySelector('.verse .seal:last-child');
+        if (seal) seal.remove();
+    }
+}
+
+function handleGameSuccess() {
+    clearInterval(timerId); // 清除计时器
+    document.getElementById('timer').innerHTML = `
+        <span style="color:var(--primary-color);">✓ 完成！</span>
+        <div>用时：${(120 - timeLeft)}秒</div>
+    `;
+    
+    // 庆祝动画
+    document.querySelectorAll('.character-box').forEach(box => {
+        box.style.transform = 'scale(1.1)';
+        box.style.background = 'rgba(176,48,48,0.1)';
+    });
+    
+    if (soundEnabled) {
+        playSuccessSound(); // 播放成功音效
+    }
+}
+
+function startTimer() {
+    // 清除任何现有的定时器
+    clearInterval(timerId);
+    
+    timerId = setInterval(() => {
+        timeLeft--;
+       
+        document.getElementById('timer').textContent = 
+            `⏳ ${String(Math.floor(timeLeft / 60)).padStart(2, '0')}:${String(timeLeft % 60).padStart(2, '0')}`;
+        
+        // 时间到的处理
+        if (timeLeft <= 0) {
+            clearInterval(timerId);
+            alert('⏰ 时间到！再来一次吧～');
+            location.reload(); // 刷新页面重新开始
+        }
+    }, 1000); // 每1000毫秒（1秒）执行一次
+}
+
+// 音频系统（原有核心逻辑）
+let audioContext;
+let backgroundMusic;
+let successSound;
+let failureSound;
+let clickSound;
+
+function initAudio() {
+    if (typeof AudioContext !== 'undefined') {
+        audioContext = new AudioContext();
+    }
+}
+
+function playBackgroundMusic() {
+    if (musicEnabled && audioContext) {
+        backgroundMusic = new Audio('音频/background-music.mp3');
+        backgroundMusic.loop = true;
+        backgroundMusic.play();
+        backgroundMusic.volume = 0.2; // 设置背景音乐音量
+    }
+}
+
+function playSuccessSound() {
+    if (soundEnabled) {
+        successSound = new Audio('音频/success-sound.mp3');
+        successSound.play();
+        successSound.volume = 1; // 设置成功音效音量
+    }
+}
+
+function playFailureSound() {
+    if (soundEnabled) {
+        failureSound = new Audio('音频/failure-sound.mp3');
+        failureSound.play();
+        failureSound.volume = 1; // 设置失败音效音量
+    }
+}
+
+function playClickSound() {
+    if (soundEnabled) {
+        clickSound = new Audio('音频/click-sound.mp3');
+        clickSound.play();
+        clickSound.volume = 1; // 设置点击音效音量
+    }
+}
+
+function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    if (musicEnabled) {
+        playBackgroundMusic();
+    } else {
+        if (backgroundMusic) {
+            backgroundMusic.pause();
+        }
+    }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+}
+
+// 初始化游戏
+document.addEventListener('DOMContentLoaded', () => {
+    initGame();
+    initAudio();
+    playBackgroundMusic(); // 播放背景音乐
+});
+</script>
+</body>
+</html>
